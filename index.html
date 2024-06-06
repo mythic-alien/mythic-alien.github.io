@@ -1,1 +1,668 @@
-<h1>test</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mythic Alien</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Press Start 2P', cursive;
+            color: #ffffff;
+            cursor: none;
+        }
+
+        #title {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, -10%);
+            font-size: 48px;
+            color: #ffffff;
+            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00;
+        }
+
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: #ffffff;
+            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00;
+        }
+
+        #timer {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: #ffffff;
+            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00;
+        }
+
+        #highScore {
+            position: absolute;
+            top: 18%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: #ffffff;
+            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00;
+        }
+
+        #achievementsButton {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            font-size: 16px;
+            padding: 5px 10px;
+            background-color: #00ff00;
+            color: #000000;
+            border: none;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00;
+        }
+
+        #achievementsButton.crt::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1),
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+        }
+
+        .crt {
+            position: relative;
+        }
+
+        .crt:before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1),
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+        }
+
+        .glow {
+            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00;
+        }
+
+        #achievementsMenu {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 20px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        #achievementsMenu h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .achievement {
+            margin-bottom: 10px;
+        }
+
+        .achievement.locked {
+            color: #888888;
+        }
+
+        .achievement button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            background-color: #00ff00;
+            color: #000000;
+            border: none;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        .achievement.unlocked button {
+            display: inline-block;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .cursor::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+            background-color: transparent;
+            color: #00ff00;
+            border: none;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+        }
+    </style>
+</head>
+<body>
+    <div id="title" class="crt glow">Mythic Alien<span class="cursor"></span></div>
+    <canvas id="meshCanvas"></canvas>
+    <canvas id="gridCanvas"></canvas>
+    <div id="score" class="crt glow">Score: 0</div>
+    <div id="timer" class="crt glow">Time: 30</div>
+    <div id="highScore" class="crt glow">High Score: 0</div>
+    <button id="achievementsButton" class="crt" onclick="toggleAchievementsMenu()">Achievements</button>
+    <div id="achievementsMenu" class="crt glow">
+        <h2>Achievements</h2>
+        <button class="close-button" onclick="toggleAchievementsMenu()">X</button>
+        <div class="achievement unlocked" data-score="0">Default - Crosshair Scope<button onclick="equipScope('crosshair')">Equip</button></div>
+        <div class="achievement locked" data-score="10">10 High Score - Dot Scope<button onclick="purchaseScope('dot', 10)">Unlock</button></div>
+        <div class="achievement locked" data-score="20">20 High Score - Circle Scope<button onclick="purchaseScope('circle', 20)">Unlock</button></div>
+        <div class="achievement locked" data-score="30">30 High Score - Extended Timer<button onclick="purchaseScope('extended', 30)">Unlock</button></div>
+        <div class="achievement locked" data-score="50">50 High Score - Fast Ampersand (Spawns once per game. Gives bonus points)<button onclick="purchaseScope('ampersand', 50)">Unlock</button></div>
+    </div>
+    <script>
+        const meshCanvas = document.getElementById('meshCanvas');
+        const meshCtx = meshCanvas.getContext('2d');
+        const gridCanvas = document.getElementById('gridCanvas');
+        const gridCtx = gridCanvas.getContext('2d');
+
+        let width, height;
+        let score = 0;
+        let highScore = 0;
+        let target = { x: 0, y: 0, size: 40, vx: 2, vy: 2 };
+        let timeLeft = 30;
+        let gameInterval;
+        let isGameOver = false;
+        let isGameStarted = false;
+        let scopeSkin = 'crosshair'; // Default scope skin
+        let ampersandActive = false;
+        let extendedTimer = false;
+        let unlocks = {
+            crosshair: true,
+            dot: false,
+            circle: false,
+            extended: false,
+            ampersand: false
+        };
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            meshCanvas.width = width;
+            meshCanvas.height = height;
+            gridCanvas.width = width;
+            gridCanvas.height = height;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const cols = 20;
+        const rows = 40;
+        const mesh = [];
+        let t = 0;
+
+        for (let y = 0; y <= rows; y++) {
+            mesh[y] = [];
+            for (let x = 0; x <= cols; x++) {
+                mesh[y][x] = { x: (x / cols - 0.5) * 2, y: (y / rows) * 2 - 1 };
+            }
+        }
+
+        function drawMesh() {
+            meshCtx.clearRect(0, 0, width, height);
+            meshCtx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+            meshCtx.lineWidth = 0.5;
+            meshCtx.shadowColor = '#00ff00';
+            meshCtx.shadowBlur = 20;
+
+            meshCtx.save();
+            meshCtx.beginPath();
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const v1 = project(mesh[y][x]);
+                    const v2 = project(mesh[y][x + 1]);
+                    const v3 = project(mesh[y + 1][x]);
+                    const v4 = project(mesh[y + 1][x + 1]);
+
+                    meshCtx.moveTo(v1.x, v1.y);
+                    meshCtx.lineTo(v2.x, v2.y);
+                    meshCtx.lineTo(v4.x, v4.y);
+                    meshCtx.lineTo(v3.x, v3.y);
+                    meshCtx.closePath();
+                }
+            }
+            meshCtx.stroke();
+            meshCtx.clip();
+            meshCtx.restore();
+            meshCtx.stroke();
+        }
+
+        function project(point) {
+            const fov = 2.0;
+            const z = 1.0 / (fov - point.y);
+            return {
+                x: point.x * z * width + width / 2,
+                y: point.y * z * height + height / 2
+            };
+        }
+
+        function drawTarget() {
+            gridCtx.clearRect(0, 0, width, height);
+            gridCtx.fillStyle = '#ff0000';
+            gridCtx.font = `${target.size}px "Press Start 2P"`;
+            gridCtx.fillText('*', target.x, target.y);
+            gridCtx.shadowColor = '#ff0000';
+            gridCtx.shadowBlur = 10;
+        }
+
+        function spawnTarget() {
+            target.size = Math.random() * 40 + 20;
+
+            // Adjust the bounds to allow more roaming area
+            const minY = Math.max(0, height / 5);
+            const maxY = Math.min(height, height * 4 / 5);
+            const minX = Math.max(0, width / 5);
+            const maxX = Math.min(width - target.size, width * 4 / 5);
+
+            target.x = Math.random() * (maxX - minX) + minX;
+            target.y = Math.random() * (maxY - minY) + minY;
+
+            // Randomize velocities
+            const speedMultiplier = extendedTimer ? 2 : 1;
+            target.vx = (Math.random() - 0.5) * 6 * speedMultiplier;
+            target.vy = (Math.random() - 0.5) * 6 * speedMultiplier;
+        }
+
+        function animate() {
+            const frameRate = 30;
+            const frameInterval = 1000 / frameRate;
+            let lastFrameTime = 0;
+
+            function tick(now) {
+                if (now - lastFrameTime >= frameInterval) {
+                    t += 0.005; // Slower tick rate
+
+                    for (let y = 0; y <= rows; y++) {
+                        for (let x = 0; x <= cols; x++) {
+                            let v = mesh[y][x];
+                            v.y -= 0.005;
+                            if (v.y < -1) v.y += 2;
+                        }
+                    }
+
+                    // Move target
+                    target.x += target.vx;
+                    target.y += target.vy;
+
+                    // Bounce target off edges
+                    if (target.x < width / 5 || target.x > width * 4 / 5 - target.size) {
+                        target.vx *= -1;
+                    }
+                    if (target.y < height / 5 || target.y > height * 4 / 5 - target.size) {
+                        target.vy *= -1;
+                    }
+
+                    drawMesh();
+                    drawGridOverlay();
+                    drawTarget();
+                    drawAmpersand();
+                    lastFrameTime = now;
+                }
+                requestAnimationFrame(tick);
+            }
+
+            requestAnimationFrame(tick);
+        }
+
+        function typeWriterEffect(text, element, delay = 150) {
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, delay);
+                }
+            }
+            type();
+        }
+
+        function drawGridOverlay() {
+            gridCtx.clearRect(0, 0, width, height);
+            gridCtx.strokeStyle = 'rgba(0, 255, 0, 0.2)';
+            gridCtx.lineWidth = 1;
+            const gridSize = 20;
+
+            for (let x = 0; x < width; x += gridSize) {
+                gridCtx.beginPath();
+                gridCtx.moveTo(x, 0);
+                gridCtx.lineTo(x, height);
+                gridCtx.stroke();
+            }
+
+            for (let y = 0; y < height; y += gridSize) {
+                gridCtx.beginPath();
+                gridCtx.moveTo(0, y);
+                gridCtx.lineTo(width, y);
+                gridCtx.stroke();
+            }
+        }
+
+        function checkHit(event) {
+            if (isGameOver) return;
+
+            const rect = gridCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            if (x > target.x && x < target.x + target.size && y > target.y - target.size && y < target.y) {
+                score++;
+                document.getElementById('score').innerText = `Score: ${score}`;
+                spawnTarget();
+                playSound('hit');
+                if (!isGameStarted) {
+                    startGame();
+                }
+                checkAchievements();
+            } else if (ampersandActive && checkAmpersandHit(x, y)) {
+                score += 10;
+                document.getElementById('score').innerText = `Score: ${score}`;
+                playSound('hit');
+                ampersandActive = false;
+            } else {
+                if (isGameStarted) {
+                    score = Math.max(0, score - 1);
+                    document.getElementById('score').innerText = `Score: ${score}`;
+                    playSound('miss');
+                }
+            }
+        }
+
+        function checkAmpersandHit(x, y) {
+            return x > ampersand.x && x < ampersand.x + ampersand.size && y > ampersand.y - ampersand.size && y < ampersand.y
+        }
+
+        function checkAchievements() {
+            const achievements = document.querySelectorAll('.achievement');
+            achievements.forEach(achievement => {
+                const requiredScore = parseInt(achievement.dataset.score);
+                if (score >= requiredScore && !achievement.classList.contains('unlocked')) {
+                    achievement.querySelector('button').disabled = false;
+                }
+            });
+        }
+
+        function startGame() {
+            isGameStarted = true;
+            gameInterval = setInterval(updateTimer, 1000);
+            playJingle('start');
+            if (unlocks.ampersand) {
+                setTimeout(spawnAmpersand, Math.random() * (timeLeft - 3) * 1000); // Spawn at a random time during the game
+            }
+        }
+
+        function updateTimer() {
+            if (isGameOver) return;
+
+            timeLeft--;
+            document.getElementById('timer').innerText = `Time: ${timeLeft}`;
+            if (timeLeft <= 0) {
+                clearInterval(gameInterval);
+                isGameOver = true;
+                isGameStarted = false;
+                playSound('timeup');
+                playJingle('gameover');
+                if (score > highScore) {
+                    highScore = score;
+                    document.getElementById('highScore').innerText = `High Score: ${highScore}`;
+                }
+                setTimeout(restartGame, 3000);
+            }
+        }
+
+        function restartGame() {
+            score = 0;
+            timeLeft = extendedTimer ? 60 : 30;
+            isGameOver = false;
+            document.getElementById('score').innerText = `Score: ${score}`;
+            document.getElementById('timer').innerText = `Time: ${timeLeft}`;
+            spawnTarget();
+        }
+
+        function playSound(type) {
+            let frequency;
+            switch (type) {
+                case 'hit':
+                    frequency = 440;
+                    break;
+                case 'miss':
+                    frequency = 220;
+                    break;
+                case 'timeup':
+                    frequency = 110;
+                    break;
+                default:
+                    frequency = 440;
+            }
+
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = context.createOscillator();
+            const gainNode = context.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(context.destination);
+
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(frequency, context.currentTime);
+            gainNode.gain.setValueAtTime(0.5, context.currentTime);
+
+            oscillator.start();
+            setTimeout(() => {
+                oscillator.stop();
+            }, 100);
+        }
+
+        function playJingle(type) {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const gainNode = context.createGain();
+            gainNode.connect(context.destination);
+            gainNode.gain.setValueAtTime(0.5, context.currentTime);
+
+            const notes = type === 'start' ? [440, 660, 880] : [880, 660, 440];
+            notes.forEach((note, index) => {
+                const oscillator = context.createOscillator();
+                oscillator.connect(gainNode);
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(note, context.currentTime + index * 0.2);
+                oscillator.start(context.currentTime + index * 0.2);
+                oscillator.stop(context.currentTime + index * 0.2 + 0.1);
+            });
+        }
+
+        function drawCrosshair(event) {
+            gridCtx.clearRect(0, 0, width, height);
+            drawTarget();
+            drawAmpersand();
+
+            const rect = gridCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            gridCtx.strokeStyle = '#ffffff';
+            gridCtx.lineWidth = 1;
+
+            if (scopeSkin === 'crosshair') {
+                gridCtx.beginPath();
+                gridCtx.moveTo(x - 10, y);
+                gridCtx.lineTo(x + 10, y);
+                gridCtx.moveTo(x, y - 10);
+                gridCtx.lineTo(x, y + 10);
+                gridCtx.stroke();
+            } else if (scopeSkin === 'dot') {
+                gridCtx.beginPath();
+                gridCtx.arc(x, y, 5, 0, Math.PI * 2);
+                gridCtx.fillStyle = '#ffffff';
+                gridCtx.fill();
+            } else if (scopeSkin === 'circle') {
+                gridCtx.beginPath();
+                gridCtx.arc(x, y, 15, 0, Math.PI * 2);
+                gridCtx.stroke();
+            }
+
+            // Keep crosshair visible when mouse stops moving
+            requestAnimationFrame(() => drawCrosshair(event));
+        }
+
+        function changeScopeSkin(skin) {
+            scopeSkin = skin;
+        }
+
+        function purchaseScope(skin, cost) {
+            if (highScore >= cost && !unlocks[skin]) {
+                highScore -= cost;
+                document.getElementById('highScore').innerText = `High Score: ${highScore}`;
+                unlocks[skin] = true;
+                if (skin === 'extended') {
+                    extendedTimer = true;
+                    timeLeft = 60; // Extend timer immediately
+                }
+                const achievement = document.querySelector(`.achievement[data-score="${cost}"]`);
+                achievement.classList.remove('locked');
+                achievement.classList.add('unlocked');
+                achievement.querySelector('button').innerText = 'Equip';
+                equipScope(skin);
+            } else if (unlocks[skin]) {
+                alert(`${skin} already unlocked!`);
+                equipScope(skin);
+            } else {
+                alert(`You need ${cost} high score to unlock this.`);
+            }
+        }
+
+        function toggleAchievementsMenu() {
+            const menu = document.getElementById('achievementsMenu');
+            if (menu.style.display === 'none' || menu.style.display === '') {
+                menu.style.display = 'block';
+                document.body.style.cursor = 'default';
+            } else {
+                menu.style.display = 'none';
+                document.body.style.cursor = 'none';
+            }
+        }
+
+        window.onclick = function(event) {
+            const menu = document.getElementById('achievementsMenu');
+            if (menu.style.display === 'block' && !menu.contains(event.target) && event.target.id !== 'achievementsButton') {
+                toggleAchievementsMenu();
+            }
+        };
+
+        let ampersand = { x: 0, y: 0, size: 20, vx: 3, vy: 3 };
+
+        function spawnAmpersand() {
+            if (unlocks.ampersand) {
+                ampersand.size = Math.random() * 20 + 20;
+                ampersand.x = Math.random() * (width - ampersand.size);
+                ampersand.y = Math.random() * (height - ampersand.size);
+                ampersand.vx = (0.01 * 0.05) * 8;
+                ampersand.vy = (0.01 * 0.05) * 8;
+                ampersandActive = true;
+                setTimeout(() => {
+                    ampersandActive = false;
+                }, 5000); // Ampersand disappears after 5 seconds
+            }
+        }
+
+        function drawAmpersand() {
+            if (ampersandActive) {
+                gridCtx.fillStyle = '#0000ff';
+                gridCtx.font = `${ampersand.size}px "Press Start 2P"`;
+                gridCtx.fillText('&', ampersand.x, ampersand.y);
+                gridCtx.shadowColor = '#0000ff';
+                gridCtx.shadowBlur = 10;
+
+                // Move ampersand
+                ampersand.x += ampersand.vx;
+                ampersand.y += ampersand.vy;
+
+                // Bounce ampersand off edges
+                if (ampersand.x < 0 || ampersand.x > width - ampersand.size) {
+                    ampersand.vx *= -1;
+                }
+                if (ampersand.y < 0 || ampersand.y > height - ampersand.size) {
+                    ampersand.vy *= -1;
+                }
+            }
+        }
+
+        function equipScope(skin) {
+            if (unlocks[skin]) {
+                if (skin !== 'extended' && skin !== 'ampersand') { // a lazy hack to stop the upgrades being treated like scopes and breaking your scope
+                    changeScopeSkin(skin);
+                }
+                alert(`Equipped ${skin}!`);
+                toggleAchievementsMenu();
+            } else {
+                alert(`You need to unlock the ${skin} first.`);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const titleElement = document.getElementById('title');
+            titleElement.innerHTML = '';
+            typeWriterEffect('Mythic Alien', titleElement);
+            spawnTarget();
+            gridCanvas.addEventListener('click', checkHit);
+            gridCanvas.addEventListener('mousemove', drawCrosshair);
+            playJingle('start');
+            changeScopeSkin('crosshair'); // Default scope skin
+        });
+
+        animate();
+    </script>
+</body>
+</html>
